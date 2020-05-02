@@ -16,7 +16,7 @@ import numpy as np                  #mexe direitinho com números
 import imageio as img               #mexe direitinho com as imagens
 # import matplotlib.pyplot as plt     #plota as coisinhas
 
-#Função que plota duas imagens lado a lado. r = referencia, m = modificada
+# # Função que plota duas imagens lado a lado. r = referencia, m = modificada
 # def plot_compare(r, m):
 #     plt.figure(figsize=(12, 12))
 
@@ -67,21 +67,18 @@ def image_convolution(r, w):
     return g
 
 def gaussian_kernel(x,ss):
-    return np.exp( ((-1*(x**2))/(2*(ss**2))) / (2*np.pi*(ss**2)) )
+    return (np.exp( ( (-1*(x**2)) / (2*(ss**2)) ) ) / (2*np.pi*(ss**2) ) ) 
 
-def bilateral_convolution(r,w,sr):
+def bilateral_convolution(r,gs,sr):
     ############TRANSFORMAR ESSA PARTE EM OUTRA FUNÇÃO###################
     #calcula o tamanha da matriz w de convolução
-    n, m = w.shape
+    n, m = gs.shape
 
     #Encontra o centro da matriz de convolução: o tamanho das linhas e colunas de w é sempre ímpar
     a = int((n - 1) / 2) #linha
     b = int((m - 1) / 2) #coluna
 
     N, M = r.shape
-
-    #flipped filter pra aplicar a convolução
-    # w_flip = np.flip(np.flip(w, 0), 1) ######ONDE EU USO A FLIP NESSE CASO?
 
     #nova imagem para salvar os valores com a convolução aplicada
     g = np.zeros(r.shape, dtype=np.float32)
@@ -95,11 +92,13 @@ def bilateral_convolution(r,w,sr):
             sub_r = r[x - a: x + a + 1, y - b:y + b + 1]
 
             gr = np.zeros((n,m), dtype=np.float32)
-            
+            w = np.zeros((n,m), dtype=np.float32)            
+
             for s_x in range(0, n):
                 for s_y in range(0,m):
-                    gr[s_x,s_y] = gaussian_kernel((sub_r[s_x,s_y] - sub_r[a,b]),sr)     
-                    w[s_x,s_y] = w[s_x,s_y] * gr[s_x,s_y]
+                    gr[s_x,s_y] = gaussian_kernel((sub_r[s_x,s_y] - sub_r[a,b]), sr)     
+                    
+                    w[s_x,s_y] = gs[s_x,s_y] * gr[s_x,s_y]
                     
                     Wp = Wp + w[s_x,s_y]
                     If = If + (w[s_x,s_y] * sub_r[s_x,s_y])
@@ -120,7 +119,7 @@ def bilateral_filter(r, n, ss, sr):
     # Spatial component
     for x in range(0,n):
         for y in range(0,n):
-            w[x,y] = gaussian_kernel(np.sqrt(((x-a) ** 2) + ((y-b) ** 2)),ss)
+            w[x,y] = gaussian_kernel(np.sqrt( ( (x-a) ** 2) + ((y-b) ** 2) ), ss)
 
     r = r.astype(np.float32)
     w = w.astype(np.float32)
@@ -156,41 +155,50 @@ def unsharp_mask(r, c, k):
 #Método 3
 #função que sei lá. Em ordem: Imagem de Referência, parâmetro sigma_col e parâmetro sigma_row
 def vignette_filter(r, row, col):
-    # N, M = r.shape
+    N, M = r.shape
 
-    # Wrow = np.zeros(N)
-    # Wcol = np.zeros(M)
-    # Wrow = Wrow.astype(np.float32)
-    # Wcol = Wcol.astype(np.float32)
+    Wrow = np.zeros(N)
+    Wcol = np.zeros(M)
+    Wrow = Wrow.astype(np.float32)
+    Wcol = Wcol.astype(np.float32)
 
-    # m = np.zeros(r.shape, dtype=np.float32)
+    m = np.zeros(r.shape, dtype=np.float32)
     
-    # r = r.astype(np.float32)
+    r = r.astype(np.float32)
     
-    # a = int((N - 1) / 2) #linha
-    # b = int((M - 1) / 2) #coluna
+    if (N%2 != 0):
+        a = int((N - 1) / 2) #linha
+    else:
+        a = int((N / 2) - 1)
 
-    # for x in range(0, N):
-    #     Wrow[x] = gaussian_kernel(x-a,row)
+    if (M%2 != 0):    
+        b = int((M - 1) / 2) #coluna
+    else:
+        b = int((M / 2) - 1)
 
-    # for y in range(0, M):
-    #     Wcol[y] = gaussian_kernel(y-b,col)
 
-    # Wcol = np.transpose(Wcol)
+    for x in range(0, N):
+        Wrow[x] = gaussian_kernel(x-a,row)
 
-    # w = np.multiply(Wcol,Wrow)
+    for y in range(0, M):
+        Wcol[y] = gaussian_kernel(y-b,col)
 
-    # for x in range(0, N):
-    #     for y in range(0, M):
-    #         m[x,y] = r[x,y] * w[x,y] 
+    Wrow = Wrow[np.newaxis]    
+    Wcol = Wcol[np.newaxis]
 
-    # # m = np.dot(r,w)
+    Wrow = np.transpose(Wrow)
 
-    # #normalizando a imagem modificada
-    # m = image_normalization(m)
+    w = np.multiply(Wrow,Wcol)
 
-    # return (m.astype(np.uint8))
-    pass
+    for x in range(0, N):
+        for y in range(0, M):
+            m[x,y] = r[x,y] * w[x,y] 
+
+
+    #normalizando a imagem modificada
+    m = image_normalization(m)
+
+    return (m.astype(np.uint8))
 
 #Função que prepara a imagem r=referencia pra aplicar a convulução com um padding de tamanho determinado de linhas e colunas
 def image_padding(r,prow,pcol):
@@ -235,7 +243,8 @@ if method == 1:
     sigma_r = float(input())
 
     #faz o padding da imagem
-    input_img = image_padding(input_img, 1, 1)
+    pad_size = int( (filter_size - 1) / 2)
+    input_img = image_padding(input_img, pad_size, pad_size)
 
     #aplica o filtro
     output_img = bilateral_filter(input_img,filter_size,sigma_s,sigma_r)
