@@ -14,22 +14,22 @@
 import sys                          #stdin, stdout & stderr
 import numpy as np                  #mexe direitinho com números
 import imageio as img               #mexe direitinho com as imagens
-import matplotlib.pyplot as plt     #plota as coisinhas
+# import matplotlib.pyplot as plt     #plota as coisinhas
 
 #Função que plota duas imagens lado a lado. r = referencia, m = modificada
-def plot_compare(r, m):
-    plt.figure(figsize=(12, 12))
+# def plot_compare(r, m):
+#     plt.figure(figsize=(12, 12))
 
-    # defines a panel to show the images side by side
-    plt.subplot(121)  # panel with 1 row, 2 columns, to show the image at the first (1st) position
-    plt.imshow(r, cmap="gray")
-    plt.axis('off')   # remove axis with numbers
+#     # defines a panel to show the images side by side
+#     plt.subplot(121)  # panel with 1 row, 2 columns, to show the image at the first (1st) position
+#     plt.imshow(r, cmap="gray")
+#     plt.axis('off')   # remove axis with numbers
 
-    plt.subplot(122)  # panel with 1 row, 2 columns, to show the image at the second (2nd) position
-    plt.imshow(m, cmap="gray")
-    plt.axis('off')
+#     plt.subplot(122)  # panel with 1 row, 2 columns, to show the image at the second (2nd) position
+#     plt.imshow(m, cmap="gray")
+#     plt.axis('off')
 
-    plt.show()
+#     plt.show()
 
 #normaliza uma imagem referência r
 def image_normalization(r):
@@ -66,12 +66,68 @@ def image_convolution(r, w):
             g[x, y] = np.sum(np.multiply(sub_r, w_flip))
     return g
 
+def gaussian_kernel(x,ss):
+    return np.exp( ((-1*(x**2))/(2*(ss**2))) / (2*np.pi*(ss**2)) )
+
+def bilateral_convolution(r,w,sr):
+    ############TRANSFORMAR ESSA PARTE EM OUTRA FUNÇÃO###################
+    #calcula o tamanha da matriz w de convolução
+    n, m = w.shape
+
+    #Encontra o centro da matriz de convolução: o tamanho das linhas e colunas de w é sempre ímpar
+    a = int((n - 1) / 2) #linha
+    b = int((m - 1) / 2) #coluna
+
+    N, M = r.shape
+
+    #flipped filter pra aplicar a convolução
+    # w_flip = np.flip(np.flip(w, 0), 1) ######ONDE EU USO A FLIP NESSE CASO?
+
+    #nova imagem para salvar os valores com a convolução aplicada
+    g = np.zeros(r.shape, dtype=np.float32)
+    ############TRANSFORMAR ESSA PARTE EM OUTRA FUNÇÃO###################
+
+    for x in range(a, N - a):
+        for y in range(b, M - b):
+            If = 0
+            Wp = 0
+            # gets subimage
+            sub_r = r[x - a: x + a + 1, y - b:y + b + 1]
+
+            gr = np.zeros((n,m), dtype=np.float32)
+            
+            for s_x in range(0, n):
+                for s_y in range(0,m):
+                    gr[s_x,s_y] = gaussian_kernel((sub_r[s_x,s_y] - sub_r[a,b]),sr)     
+                    w[s_x,s_y] = w[s_x,s_y] * gr[s_x,s_y]
+                    
+                    Wp = Wp + w[s_x,s_y]
+                    If = If + (w[s_x,s_y] * sub_r[s_x,s_y])
+
+            g[x,y] = If/Wp
+
+    return g
 
 #Método 1
 #Função que aplica o filtro bilateral. Em ordem: Imagem de Referência, tamanho do filtro n
 #----------------------------------------------- parâmetro sigma_s e parâmetro sigma_r
 def bilateral_filter(r, n, ss, sr):
-    pass
+    
+    w = np.zeros((n,n), dtype=np.float32)
+
+    a = b = int((n - 1) / 2)
+
+    # Spatial component
+    for x in range(0,n):
+        for y in range(0,n):
+            w[x,y] = gaussian_kernel(np.sqrt(((x-a) ** 2) + ((y-b) ** 2)),ss)
+
+    r = r.astype(np.float32)
+    w = w.astype(np.float32)
+
+    m = bilateral_convolution(r,w,sr)
+
+    return (m.astype(np.uint8))
 
 #Método 2
 #Função que aplica o filtro laplaciano e retorna a imagem modificada. Em ordem: Imagem de Referência, parâmetro c e kernel
@@ -100,6 +156,40 @@ def unsharp_mask(r, c, k):
 #Método 3
 #função que sei lá. Em ordem: Imagem de Referência, parâmetro sigma_col e parâmetro sigma_row
 def vignette_filter(r, row, col):
+    # N, M = r.shape
+
+    # Wrow = np.zeros(N)
+    # Wcol = np.zeros(M)
+    # Wrow = Wrow.astype(np.float32)
+    # Wcol = Wcol.astype(np.float32)
+
+    # m = np.zeros(r.shape, dtype=np.float32)
+    
+    # r = r.astype(np.float32)
+    
+    # a = int((N - 1) / 2) #linha
+    # b = int((M - 1) / 2) #coluna
+
+    # for x in range(0, N):
+    #     Wrow[x] = gaussian_kernel(x-a,row)
+
+    # for y in range(0, M):
+    #     Wcol[y] = gaussian_kernel(y-b,col)
+
+    # Wcol = np.transpose(Wcol)
+
+    # w = np.multiply(Wcol,Wrow)
+
+    # for x in range(0, N):
+    #     for y in range(0, M):
+    #         m[x,y] = r[x,y] * w[x,y] 
+
+    # # m = np.dot(r,w)
+
+    # #normalizando a imagem modificada
+    # m = image_normalization(m)
+
+    # return (m.astype(np.uint8))
     pass
 
 #Função que prepara a imagem r=referencia pra aplicar a convulução com um padding de tamanho determinado de linhas e colunas
@@ -144,6 +234,9 @@ if method == 1:
     sigma_s = float(input())
     sigma_r = float(input())
 
+    #faz o padding da imagem
+    input_img = image_padding(input_img, 1, 1)
+
     #aplica o filtro
     output_img = bilateral_filter(input_img,filter_size,sigma_s,sigma_r)
 
@@ -164,10 +257,13 @@ elif method == 3:
     sigma_row = float(input())
     sigma_col = float(input())
 
+    #faz o padding da imagem
+    input_img = image_padding(input_img, 1, 1)
+
     #aplica o filtro
     output_img = vignette_filter(input_img,sigma_row,sigma_col)
 
 
 calculo_erro(input_img,output_img)                  #computa o erro RSE
-plot_compare(input_img,output_img)                  #compara imagens lado a lado
+# plot_compare(input_img,output_img)                  #compara imagens lado a lado
 save_img(output_img,filename + "_nova.png", save)   #salva a imagem modificada, caso indicado
