@@ -1,9 +1,7 @@
 # # # # # # # # # # #  HEADER  # # # # # # # # # # #
 #                                                  #
 #        ALUNA: Amanda Carrijo Viana Figur         #
-#                N. USP: 8937736                   #
 #        ALUNO: Luiz Augusto Vieira Manoel         #
-#                N. USP: 8937308                   #
 #   CURSO: Mestrado em Ciências de Computação e    #
 #        Matemática Computacional (PPG-CCMC)       #
 #            ANO DE INGRESSO: 2020/2019            #
