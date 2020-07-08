@@ -1,6 +1,6 @@
 # DIP Assignment
 
-Image Processing - scc0251. 
+Image Processing - SCC0251/SCC5830. First semester of 2020.
 
 Assignment 2 - Image enhancemenet
 
