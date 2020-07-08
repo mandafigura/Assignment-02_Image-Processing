@@ -14,4 +14,6 @@ Folders and files:
 * [Tests](/tests) contains two files .in used in the demos
 * [Notebook with Demo](Assignment_02_notebook.ipynb) is a notebook exemplifying functions developed and submitted
 
+**Warning:** The content on this repository is in portuguese.
+
 
